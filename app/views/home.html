@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="text/javascript" src="https://cdn.bootcss.com/qs/6.7.0/qs.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/react/16.13.1/umd/react.production.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/react-dom/16.13.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/babel-standalone/7.0.0-beta.3/babel.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/axios/0.18.0/axios.min.js"></script>
+    <!-- <script type="text/javascript" src="../password.js"> </script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="list"></div>
+</body>
+<script type="text/babel">
+
+    const compsButton = React.createElement(() => {
+    const { useEffect, useRef, useState } = window.React;
+
+    const [value, setValue] = useState('');
+    const [dataList, setDataList] = useState([{}]);
+
+    function getAesString(data,key,iv){//加密
+            var key  = CryptoJS.enc.Utf8.parse(key);
+            var iv   = CryptoJS.enc.Utf8.parse(iv);
+            var encrypted =CryptoJS.AES.encrypt(data,key,
+                {
+                    iv:iv,
+                    mode:CryptoJS.mode.CBC,
+                    padding:CryptoJS.pad.Pkcs7
+                });
+            return encrypted.toString();    //返回的是base64格式的密文
+        }
+
+    function getAES(data, iv){ //加密
+        var key  = 'yhus$gs528n35^*^$#@#^&(';  //密钥
+        // var iv   = time1;
+        var encrypted =getAesString(data,key,iv); //密文
+        var encrypted1 =CryptoJS.enc.Utf8.parse(encrypted);
+        return encrypted;
+    }
+
+    const token = sessionStorage.getItem('token');
+    axios.defaults.headers.common['token'] = token;
+    useEffect(() => {
+        getList();
+    }, []);
+
+    const getList = ()=>{
+        var qs = Qs
+        qs.stringify()
+        axios.get('/api/getDataList').then(function (res) {
+            // let {data} = res.data;
+            setDataList(res.data.data||[])
+        })
+    }
+
+    const onchange = (event)=>{
+        event.persist();
+        setValue(event.target.value)
+    }
+    const onsubmit = (event)=>{
+        var qs = Qs
+        const params = qs.stringify({value})
+        let time1 = Date.parse(new Date()); //精确到秒
+        axios({
+            headers: {'nonce': getAES(token, time1), 'times': time1},
+            url: '/api/setDataList',
+            method: 'post',
+            data: params
+            // data: {"data":`"${value}"`}
+        }).then(res=>{
+            if(res.status === 200) {
+                getList();
+            }
+        })
+    }
+
+    const onFollow =()=>{
+        alert('恭喜您已经关注了我们的网站')
+    }
+
+    return <div><ul>
+            {dataList.map(res=>{
+                return <li>
+                        <h2>姓名：{res.author}</h2>
+                        <h2>title：{res.title}</h2>
+                        <h2>内容：{res.data}</h2>
+                    </li>
+            })}
+        </ul>
+        <span>添加：</span><input type="text" value={value} onChange={onchange} />
+        <button onClick={onsubmit}>提交</button>
+        <button onClick={onFollow}>关注</button>
+        </div>
+  })
+  ReactDOM.render(compsButton, document.getElementById("list"));
+</script>
+
+<!-- <script src="http://localhost:5000/xss"></script> -->
+<!-- <script>alert(1)</script> -->
+
+</html>
